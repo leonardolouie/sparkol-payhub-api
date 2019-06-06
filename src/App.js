@@ -8,9 +8,9 @@ class App extends React.Component{
    super();
    this.state = { 
 
-      public_key: "337b9134-dc78-4ba3-8cb8-0db7d8a3d130",
-      private_key:"998d06c9-ec3f-4673-85f1-90b75a3e5ea6",
-      app_id: "com.facebook.sparkol",
+      public_key: "d4874e4e-522d-4361-b699-cf021b735c81",
+      private_key:"75c320b4-03a2-401f-a028-25d699074627",
+      app_id: "com.facebook.sparkol-india-unosoft",
       token:"",
       type:"",
       payment_id:"",
@@ -120,10 +120,7 @@ async createPayment()
         
        this.setState({payment_id:data.id, 
         possible_next_action_href_charge:data.possible_next_actions[1].href,
-        possible_next_action_href_authorize:data.possible_next_actions[2].href, 
-        payment_id:data.id
-
-
+        possible_next_action_href_authorize:data.possible_next_actions[2].href
       });
        console.log(data);
        console.log("charge"+this.state.possible_next_action_href_charge +
@@ -160,7 +157,7 @@ async createPayment()
 
        const data = await tokenObj.json();
        console.log(data);
-       this.capture();
+       this.charges();
         
     }
 
@@ -182,7 +179,7 @@ async createPayment()
 
        const data = await tokenObj.json();
        console.log(data);
-       this.charges();
+       
 
   }
   async charges()
@@ -202,11 +199,12 @@ async createPayment()
       body: JSON.stringify({
         "payment_method": {
         "type": this.state.type,
-        "token": "{{"+this.state.token+"}}"
+        "token": this.state.token
       }})
       });
 
        const data = await tokenObj.json();
+       console.log(data);
       
   }
 
