@@ -1,5 +1,7 @@
 import React from 'react';
 import './App.css';
+
+
 class App extends React.Component{
  
   constructor(props){
@@ -7,60 +9,238 @@ class App extends React.Component{
    this.state = { 
 
       public_key: "337b9134-dc78-4ba3-8cb8-0db7d8a3d130",
+      private_key:"998d06c9-ec3f-4673-85f1-90b75a3e5ea6",
       app_id: "com.facebook.sparkol",
       token:"",
+      type:"",
+      payment_id:"",
+      possible_next_action:"",
+      possible_next_action_href_charge:"",
+      possible_next_action_href_authorize:"",
+      possible_next_action_href_capture:"",
       created:"",
       pass_luhn_validation_:false,
       encrypted_cvv:"",
-      token_type:"",
+      token_type:"credit_card",
       created_state:"", 
       bin_number:"",
+      holder_name:"delicouschef",
+      card_number:"4863370083176698",
+      expiration_date:"07/24",
+      ccv:"851", 
+      amount:4097,
+      currency:"EUR",
+      paymentsOsEnv:'test',
+      idempotency_key:'123456789'
       
 
    }
+   this.handleButtonSubmit = this.handleButtonSubmit.bind(this);
+   this.tokenize = this.tokenize.bind(this);
+   this.createPayment = this.createPayment.bind(this);
+   this.authorize = this.authorize.bind(this);
+   this.charges = this.charges.bind(this);
+   
+  }
+           //button submit
+      handleButtonSubmit(e)
+      {
+        e.preventDefault();
+           //passing the value from the form to state
+      /*this.setState({
+        holder_name:e.target.holder_name.value, 
+        card_number:e.target.card_number.value,
+        expiration_date:e.target.expiration_date.value,
+        cvv:e.target.cvv.value
+      });*/
+
+       //calling the tokenize
+       
+      
+            this.tokenize();
+            
+          
+
+      }
+  async tokenize(){
+     
+     const tokenObj =  await fetch('https://api.paymentsos.com/tokens', {  
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'public_key':this.state.public_key,
+          'app_id': this.state.app_id,
+          'api-version': "1.2.0",
+          'x-payments-os-env': this.state.paymentsOsEnv,
+          
+        },
+        body: JSON.stringify({
+          "token_type": this.state.token_type,
+          "credit_card_cvv": this.state.cvv,
+          "card_number": this.state.card_number,
+          "expiration_date": this.state.expiration_date,
+          "holder_name": this.state.holder_name
+        })
+
+      });
+
+      const data = await tokenObj.json();
+      this.setState({token:data.token,type:data.type});
+      console.log("Token result is: "+this.state.token + "The type is: "+ this.state.type);
+      
+     this.createPayment();
+    
+      
+      
+        
+  }
+
+
+
+
+
+async createPayment()
+  {
+    const tokenObj = await fetch('https://api.paymentsos.com/payments', {  
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'private_key':this.state.private_key,
+        'app_id': this.state.app_id,
+        'api-version': "1.2.0",
+        'x-payments-os-env': this.state.paymentsOsEnv
+        
+      },
+      body: JSON.stringify({
+        "amount": this.state.amount,
+        "currency": this.state.currency,
+      })
+      });
+
+       const data = await tokenObj.json();
+        
+       this.setState({payment_id:data.id, 
+        possible_next_action_href_charge:data.possible_next_actions[1].href,
+        possible_next_action_href_authorize:data.possible_next_actions[2].href});
+       console.log(data);
+       console.log("charge"+this.state.possible_next_action_href_charge +
+                   "authorize: "+this.state.possible_next_action_href_authorize);
+    
+       this.authorize();
+
+
+       
+  }  
+
+  async authorize()
+  {
+
+
+
+    
+
+    const tokenObj = await fetch(this.state.possible_next_action_href_authorize, {  
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'private_key':this.state.private_key,
+        'app_id': this.state.app_id,
+        'api-version': "1.2.0",
+        'x-payments-os-env': this.state.paymentsOsEnv,
+        'idempotency_key':this.state.idempotency_key
+        
+      },
+      body: JSON.stringify(    {
+        "payment_method": {
+          "token": this.state.token,
+          "type": this.state.type,
+          "credit_card_cvv": this.state.ccv
+        }}
+      )
+      });
+
+       const data = await tokenObj.json();
+        
+             console.log(data);
+
+
+        
+    }
+
+
+
+
+
+
+  
+
+  async charges()
+  {
+
+    const tokenObj = await fetch(this.state.possible_next_action_href_charge, {  
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'private_key':this.state.private_key,
+        'app_id': this.state.app_id,
+        'api-version': "1.2.0",
+        'x-payments-os-env': this.state.paymentsOsEnv,
+        'idempotency_key':this.state.idempotency_key
+        
+      },
+      body: JSON.stringify({
+        "payment_method": {
+        "type": this.state.type,
+        "token": "{{"+this.state.token+"}}"
+      }})
+      });
+
+       const data = await tokenObj.json();
+        
+
 
 
   }
+
+
+
+
+
+
   componentWillMount()
   {
 
-        fetch('https://api.paymentsos.com/tokens', {  
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'public_key':this.state.public_key,
-            'app_id': this.state.app_id,
-            'api-version': "1.2.0",
-            'x-payments-os-env': 'test',
-            
-          },
-          body: JSON.stringify({
-            "token_type": "credit_card",
-            "credit_card_cvv": "123",
-            "card_number": "4111111111111111",
-            "expiration_date": "10/29",
-            "holder_name": "John Mark",
-            "public_key" : "625c77a9-f0f9-4884-8062-fcb7c87cbc37",
-          })
-    
-    }).then(function(response){ 
+       
       
-      return response.json()})
-      .then(function(response){
-         
-      console.log("sucess tokenization");
-      console.log(response);
-            
-    });
-      
-      
-}
+  }
+
+  
       render(){
 
         return (
           <div className="App">
+      
+           <form id="payment-form" onSubmit={this.handleButtonSubmit}> 
+           
+              <label>Holder Name</label>
+              <input type="text" name="holder_name"/> 
+              <label>card number</label>
+              <input type="text" name="card_number"/>
+              <label>Expiration date</label>
+              <input type="text" name="expiration_date"/> 
+              <label>CVV</label>
+              <input type="text" name="cvv"/>
+
+             
+             <button type="submit">Pay You</button>
+
+
+           </form>
+           
+
+
             
-          </div>
+        </div>
         );
       }
 }
