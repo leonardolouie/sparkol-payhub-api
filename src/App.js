@@ -40,7 +40,16 @@ class App extends React.Component{
    this.createPayment = this.createPayment.bind(this);
    this.authorize = this.authorize.bind(this);
    this.charges = this.charges.bind(this);
+   this.capture =this.capture.bind(this);
    
+  }
+
+  
+  componentWillMount()
+  {
+
+       
+      
   }
            //button submit
       handleButtonSubmit(e)
@@ -55,12 +64,7 @@ class App extends React.Component{
       });*/
 
        //calling the tokenize
-       
-      
-            this.tokenize();
-            
-          
-
+       this.tokenize();
       }
   async tokenize(){
      
@@ -94,11 +98,6 @@ class App extends React.Component{
       
         
   }
-
-
-
-
-
 async createPayment()
   {
     const tokenObj = await fetch('https://api.paymentsos.com/payments', {  
@@ -121,24 +120,20 @@ async createPayment()
         
        this.setState({payment_id:data.id, 
         possible_next_action_href_charge:data.possible_next_actions[1].href,
-        possible_next_action_href_authorize:data.possible_next_actions[2].href});
+        possible_next_action_href_authorize:data.possible_next_actions[2].href, 
+        payment_id:data.id
+
+
+      });
        console.log(data);
        console.log("charge"+this.state.possible_next_action_href_charge +
                    "authorize: "+this.state.possible_next_action_href_authorize);
     
-       this.authorize();
-
-
-       
+       this.authorize();  
   }  
 
   async authorize()
   {
-
-
-
-    
-
     const tokenObj = await fetch(this.state.possible_next_action_href_authorize, {  
       method: 'POST',
       headers: {
@@ -155,25 +150,41 @@ async createPayment()
           "token": this.state.token,
           "type": this.state.type,
           "credit_card_cvv": this.state.ccv
-        }}
+        }, 
+        "reconciliation_id": "23434534534"
+      
+      
+      }
       )
       });
 
        const data = await tokenObj.json();
-        
-             console.log(data);
-
-
+       console.log(data);
+       this.capture();
         
     }
 
+    async capture()
+    {
 
+    const tokenObj = await fetch("https://api.paymentsos.com/payments/"+this.state.payment_id+"/captures", {  
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'private_key':this.state.private_key,
+        'app_id': this.state.app_id,
+        'api-version': "1.2.0",
+        'x-payments-os-env': this.state.paymentsOsEnv,
+        'idempotency_key':this.state.idempotency_key
+        
+      }
+      });
 
+       const data = await tokenObj.json();
+       console.log(data);
+       this.charges();
 
-
-
-  
-
+  }
   async charges()
   {
 
@@ -196,25 +207,10 @@ async createPayment()
       });
 
        const data = await tokenObj.json();
-        
-
-
-
-  }
-
-
-
-
-
-
-  componentWillMount()
-  {
-
-       
       
   }
 
-  
+
       render(){
 
         return (
@@ -230,16 +226,8 @@ async createPayment()
               <input type="text" name="expiration_date"/> 
               <label>CVV</label>
               <input type="text" name="cvv"/>
-
-             
              <button type="submit">Pay You</button>
-
-
            </form>
-           
-
-
-            
         </div>
         );
       }
